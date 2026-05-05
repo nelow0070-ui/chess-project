@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Chess</title>
+
+  <!-- chessboard.js CSS -->
+  <link rel="stylesheet"
+    href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+
+  <style>
+    #board {
+      width: 400px;
+      margin: 50px auto;
+    }
+  </style>
+</head>
+<body>
+
+<div id="board"></div>
+
+<!-- jQuery (필수) -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+<!-- chess.js (게임 로직) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+
+<!-- chessboard.js -->
+<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+<script>
+  const game = new Chess();
+
+  const config = {
+    draggable: true,
+    position: 'start',
+
+    // 🔥 이거 없으면 이미지 안뜸
+    pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+
+    onDragStart: function (source, piece) {
+      if (game.game_over()) return false;
+
+      if (game.turn() === 'w' && piece.search(/^b/) !== -1) return false;
+      if (game.turn() === 'b' && piece.search(/^w/) !== -1) return false;
+    },
+
+    onDrop: function (source, target) {
+      const move = game.move({
+        from: source,
+        to: target,
+        promotion: 'q'
+      });
+
+      // ❗ 이거 없으면 "말 집으면 안놓아짐" 발생
+      if (move === null) return 'snapback';
+    },
+
+    onSnapEnd: function () {
+      board.position(game.fen());
+    }
+  };
+
+  const board = Chessboard('board', config);
+</script>
+
+</body>
+</html>
