@@ -7,7 +7,7 @@ import time
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "../db/chess.db")
 
-STOCKFISH_PATH = "/home/nelo/다운로드/stockfish-ubuntu-x86-64-avx2/stockfish"  # 필요하면 절대경로 넣기
+STOCKFISH_PATH = os.environ.get("STOCKFISH_PATH", "/usr/games/stockfish")
 
 # ---------------- 설정 ----------------
 DEPTH = 10  # 처음엔 8~10 추천
@@ -36,6 +36,7 @@ def get_cp_score(score):
 # ---------------- 핵심 분석 ----------------
 def analyze_position(engine, fen, move_uci):
     board = chess.Board(fen)
+    mover = board.turn
 
     # 현재 포지션 평가
     info_before = engine.analyse(board, chess.engine.Limit(depth=DEPTH))
@@ -55,6 +56,8 @@ def analyze_position(engine, fen, move_uci):
     # 이후 평가
     info_after = engine.analyse(board, chess.engine.Limit(depth=DEPTH))
     score_after = get_cp_score(info_after["score"].relative)
+    if board.turn != mover and score_after is not None:
+        score_after = -score_after
 
     # 점수 차이
     diff = score_before - score_after if score_before is not None and score_after is not None else None

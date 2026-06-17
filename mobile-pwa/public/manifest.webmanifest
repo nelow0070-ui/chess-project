@@ -1,0 +1,9 @@
+{
+  "name": "Chess Analyzer",
+  "short_name": "ChessAnalyzer",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf6",
+  "theme_color": "#6f1d2f",
+  "icons": []
+}

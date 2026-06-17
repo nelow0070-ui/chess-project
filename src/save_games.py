@@ -12,16 +12,33 @@ DB_PATH = os.path.join(BASE_DIR, "../db/chess.db")
 def normalize_fen(fen):
     return " ".join(fen.split(" ")[:4])
 
+def ensure_column(cur, table, column, column_type):
+    cur.execute(f"PRAGMA table_info({table})")
+    existing_columns = {row[1] for row in cur.fetchall()}
+    if column not in existing_columns:
+        cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
+
+def player_color_from_headers(headers, player_username):
+    if not player_username:
+        return None
+
+    username = player_username.casefold()
+    white = (headers.get("White") or "").casefold()
+    black = (headers.get("Black") or "").casefold()
+
+    if white == username:
+        return "white"
+    if black == username:
+        return "black"
+    return None
+
 # ---------------- DB 초기화 ----------------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     cur.executescript("""
-    DROP TABLE IF EXISTS moves;
-    DROP TABLE IF EXISTS games;
-
-    CREATE TABLE games (
+    CREATE TABLE IF NOT EXISTS games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         white TEXT,
         black TEXT,
@@ -29,10 +46,13 @@ def init_db():
         date TEXT,
         event TEXT,
         site TEXT,
-        round TEXT
+        round TEXT,
+        link TEXT,
+        player_username TEXT,
+        player_color TEXT
     );
 
-    CREATE TABLE moves (
+    CREATE TABLE IF NOT EXISTS moves (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         game_id INTEGER,
 
@@ -41,7 +61,7 @@ def init_db():
         turn TEXT,
 
         fen_before TEXT,
-        fen_key TEXT,   -- ⭐ 추가
+        fen_key TEXT,
 
         move TEXT,
         san TEXT,
@@ -50,26 +70,45 @@ def init_db():
         best_move TEXT,
         eval_diff INTEGER,
         mistake_type TEXT,
+        is_player_move INTEGER,
 
         FOREIGN KEY(game_id) REFERENCES games(id)
     );
 
-    CREATE INDEX idx_fen_key ON moves(fen_key);
+    CREATE INDEX IF NOT EXISTS idx_fen_key ON moves(fen_key);
     """)
+
+    ensure_column(cur, "games", "link", "TEXT")
+    ensure_column(cur, "games", "player_username", "TEXT")
+    ensure_column(cur, "games", "player_color", "TEXT")
+    ensure_column(cur, "moves", "is_player_move", "INTEGER")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_games_player_date ON games(player_username, date)")
 
     conn.commit()
     conn.close()
 
 # ---------------- 게임 저장 ----------------
-def save_game_to_db(game):
+def save_game_to_db(game, player_username=None):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     headers = game.headers
+    player_color = player_color_from_headers(headers, player_username)
 
     cur.execute("""
-    INSERT INTO games (white, black, result, date, event, site, round)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO games (
+        white,
+        black,
+        result,
+        date,
+        event,
+        site,
+        round,
+        link,
+        player_username,
+        player_color
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         headers.get("White"),
         headers.get("Black"),
@@ -78,6 +117,9 @@ def save_game_to_db(game):
         headers.get("Event"),
         headers.get("Site"),
         headers.get("Round"),
+        headers.get("Link"),
+        player_username,
+        player_color,
     ))
 
     game_id = cur.lastrowid
@@ -88,11 +130,14 @@ def save_game_to_db(game):
 
     for move in game.mainline_moves():
         fen_before = board.fen()
-        fen_key = normalize_fen(fen_before)   # ⭐ 핵심
+        fen_key = normalize_fen(fen_before)
 
         san = board.san(move)
         uci = move.uci()
         turn = "white" if board.turn else "black"
+        is_player_move = None
+        if player_color:
+            is_player_move = 1 if turn == player_color else 0
 
         board.push(move)
         fen_after = board.fen()
@@ -107,9 +152,10 @@ def save_game_to_db(game):
             fen_key,
             move,
             san,
-            fen_after
+            fen_after,
+            is_player_move
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             game_id,
             ply,
@@ -119,7 +165,8 @@ def save_game_to_db(game):
             fen_key,
             uci,
             san,
-            fen_after
+            fen_after,
+            is_player_move,
         ))
 
         if turn == "black":
@@ -131,7 +178,7 @@ def save_game_to_db(game):
     conn.close()
 
 # ---------------- PGN 파싱 ----------------
-def parse_pgn_text(pgn_text):
+def parse_pgn_text(pgn_text, player_username=None):
     pgn_io = io.StringIO(pgn_text)
 
     count = 0
@@ -140,7 +187,7 @@ def parse_pgn_text(pgn_text):
         if game is None:
             break
 
-        save_game_to_db(game)
+        save_game_to_db(game, player_username=player_username)
         count += 1
 
     print(f"총 {count} 게임 저장 완료")
@@ -154,7 +201,7 @@ def download_chesscom_pgn(username, year, month):
     }
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=20)
     except Exception as e:
         print("❌ 네트워크 오류:", e)
         return None
@@ -193,7 +240,6 @@ def download_chesscom_all(username, year):
 if __name__ == "__main__":
     init_db()
 
-
     username = input("Chess.com 아이디 입력: ")
     year = int(input("연도 입력: "))
 
@@ -202,4 +248,4 @@ if __name__ == "__main__":
     if not pgn_text:
         print("❌ 게임을 가져오지 못했습니다.")
     else:
-        parse_pgn_text(pgn_text)
+        parse_pgn_text(pgn_text, player_username=username)

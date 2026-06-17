@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#6f1d2f">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <title>Chess Analyzer Mobile</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <h1>Chess Analyzer</h1>
+        <p id="engineStatus">Browser Stockfish</p>
+      </div>
+      <button id="settingsToggle" class="icon-button" type="button" aria-label="settings">Settings</button>
+    </header>
+
+    <section id="settingsPanel" class="settings hidden">
+      <label class="field">
+        <span>Evaluation engine</span>
+        <select id="engineMode">
+          <option value="browser">Browser Stockfish</option>
+          <option value="server">Server Stockfish API</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Server API base URL</span>
+        <input id="serverBaseUrl" type="url" placeholder="https://example.com" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Browser depth</span>
+        <input id="browserDepth" type="number" min="1" max="18" value="10">
+      </label>
+      <p class="hint">Default is browser-side Stockfish. Server mode calls /eval?fen=... on the configured API.</p>
+    </section>
+
+    <section class="board-wrap">
+      <div class="eval-bar" aria-label="evaluation">
+        <div id="evalFill"></div>
+        <span id="evalLabel">0.0</span>
+      </div>
+      <div id="board"></div>
+    </section>
+
+    <section class="actions">
+      <button id="newGame" type="button">New</button>
+      <button id="undoMove" type="button">Undo</button>
+      <button id="flipBoard" type="button">Flip</button>
+      <button id="analyze" class="primary" type="button">Analyze</button>
+    </section>
+
+    <section class="panel">
+      <div class="status" id="status">White to move</div>
+      <textarea id="fenInput" readonly></textarea>
+    </section>
+  </main>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

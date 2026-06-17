@@ -11,3 +11,6 @@ venv/
 Thumbs.db
 .vscode/
 *.swp
+*.db.bak-*
+node_modules/
+dist/
