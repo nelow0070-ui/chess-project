@@ -98,6 +98,26 @@ class LichessDateTests(unittest.TestCase):
         games_call = calls[-1]
         self.assertNotIn("since", games_call["params"])
 
+    def test_import_pgn_skips_existing_games_without_shape_error(self):
+        pgn = """
+[Event "Rated rapid game"]
+[Site "https://lichess.org/reimportTest"]
+[Date "2026.06.30"]
+[Round "-"]
+[White "tester"]
+[Black "opponent"]
+[Result "1-0"]
+
+1. e4 e5 2. Nf3 Nc6 1-0
+"""
+
+        first = self.database.import_pgn(pgn, "tester", provider="lichess")
+        second = self.database.import_pgn(pgn, "tester", provider="lichess")
+
+        self.assertEqual(first["added_games"], 1)
+        self.assertEqual(second["added_games"], 0)
+        self.assertEqual(second["skipped_games"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

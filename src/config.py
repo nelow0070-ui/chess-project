@@ -6,7 +6,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR.parent
-APP_VERSION = "1.1.17"
+APP_VERSION = "1.1.19"
 DEFAULT_ANALYSIS_DEPTH = 14
 DEFAULT_ANALYSIS_WORKERS = 6
 

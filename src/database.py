@@ -174,7 +174,7 @@ def save_game(conn, game, username, provider):
         "SELECT id FROM games WHERE source_id = ?", (source_id,)
     ).fetchone()
     if existing:
-        return False, existing["id"], 0, []
+        return False, existing["id"], 0, [], []
 
     headers = game.headers
     color = player_color(headers, username)

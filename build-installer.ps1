@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $projectRoot
-$appVersion = "1.1.17"
+$appVersion = "1.1.19"
 
 $python = Join-Path $projectRoot "venv\Scripts\python.exe"
 if (-not (Test-Path $python)) {
