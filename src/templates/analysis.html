@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>분석 설정 - checkss</title>
+  <link rel="icon" href="/static/assets/checkss.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/static/assets/checkss-favicon.png">
+  <link rel="stylesheet" href="/static/app.css?v=1.1.17">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">checkss</a>
+    <span class="step-label">2 / 4 · 분석 설정</span>
+  </header>
+
+  <main class="flow-page setup-page">
+    <section class="flow-frame">
+      <div class="flow-stage">
+        <div class="flow-heading">
+          <span class="eyebrow">STOCKFISH</span>
+          <h1>분석 설정</h1>
+        </div>
+
+        <section class="settings-layout">
+          <div class="settings-main">
+            <div class="stats-row">
+              <div><span>연결 계정</span><strong id="accountCount">0</strong></div>
+              <div><span>저장된 게임</span><strong id="gameCount">0</strong></div>
+              <div><span>분석할 전체 수</span><strong id="analysisMoveCount">0</strong></div>
+            </div>
+
+            <fieldset class="setting-block">
+              <legend>Stockfish 깊이</legend>
+              <p>높을수록 정확하지만 계산 시간이 크게 증가합니다.</p>
+              <div class="depth-options" id="depthOptions">
+                <button type="button" data-depth="8">8<span>빠름</span></button>
+                <button type="button" data-depth="10">10<span>빠른 분석</span></button>
+                <button type="button" data-depth="12">12<span>정밀</span></button>
+                <button type="button" class="active" data-depth="14">14<span>권장</span></button>
+                <button type="button" data-depth="16">16<span>매우 느림</span></button>
+              </div>
+            </fieldset>
+
+            <fieldset class="setting-block">
+              <legend for="threadSelect">병렬 분석 작업자</legend>
+              <p>각 작업자가 Stockfish 한 개를 실행합니다. 이 PC의 실측 권장값은 6개입니다.</p>
+              <select id="threadSelect">
+                <option value="1">1개</option>
+                <option value="2">2개</option>
+                <option value="4">4개</option>
+                <option value="6" selected>6개 (권장)</option>
+                <option value="8">8개</option>
+                <option value="10">10개</option>
+                <option value="12">12개</option>
+                <option value="14">14개</option>
+                <option value="16">16개</option>
+              </select>
+            </fieldset>
+
+            <fieldset class="setting-block">
+              <legend for="cutoffDate">저장할 게임 시작 날짜</legend>
+              <p>이 날짜보다 오래된 게임과 수는 분석 시작 시 데이터베이스에서 삭제합니다.</p>
+              <input id="cutoffDate" type="date">
+              <span class="cleanup-preview" id="cleanupPreview"></span>
+            </fieldset>
+          </div>
+
+          <aside class="estimate-panel">
+            <span>예상 분석 시간</span>
+            <strong id="estimatedTime">계산 중</strong>
+            <dl>
+              <div><dt>깊이</dt><dd id="estimateDepth">14</dd></div>
+              <div><dt>작업자</dt><dd id="estimateThreads">6</dd></div>
+              <div><dt>대상</dt><dd id="estimateMoves">0수</dd></div>
+            </dl>
+            <p>포지션 복잡도와 CPU 성능에 따라 실제 시간은 달라질 수 있습니다.</p>
+          </aside>
+        </section>
+
+        <p class="inline-message error hidden" id="setupError"></p>
+
+        <div class="flow-actions" id="setupActions">
+          <a class="secondary-button" href="/" data-slide-link>계정 다시 선택</a>
+          <div class="action-group">
+            <a class="secondary-button" href="/board">분석 건너뛰기</a>
+            <button class="primary-button" id="startAnalysis" type="button">분석 시작</button>
+          </div>
+        </div>
+      </div>
+
+      <nav class="flow-progress progress-2" aria-label="분석 진행 단계">
+        <ol>
+          <li class="is-complete">
+            <span class="station-dot"></span>
+            <span>계정 불러오기</span>
+          </li>
+          <li class="is-active">
+            <span class="station-dot"></span>
+            <span>분석 설정</span>
+          </li>
+          <li>
+            <span class="station-dot"></span>
+            <span>분석</span>
+          </li>
+          <li>
+            <span class="station-dot"></span>
+            <span>완료</span>
+          </li>
+        </ol>
+      </nav>
+    </section>
+  </main>
+
+  <script src="/static/flow.js?v=1.1.17"></script>
+  <script src="/static/analysis.js?v=1.1.17"></script>
+</body>
+</html>

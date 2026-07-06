@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>보드 - checkss</title>
+  <link rel="stylesheet" href="/static/chessboard-1.0.0.min.css">
+  <link rel="icon" href="/static/assets/checkss.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/static/assets/checkss-favicon.png">
+  <link rel="stylesheet" href="/static/app.css?v=1.1.17">
+</head>
+<body class="board-body">
+  <header class="topbar">
+    <a class="brand" href="/">checkss</a>
+    <nav class="top-actions">
+      <button class="icon-button settings-trigger" id="openAnalysisManager" type="button" aria-label="설정">⚙</button>
+    </nav>
+  </header>
+
+  <main class="board-page">
+    <section class="board-column">
+      <div class="board-toolbar">
+        <div>
+          <span class="eyebrow">POSITION</span>
+          <strong id="positionStatus">White to move</strong>
+        </div>
+        <div class="board-toolbar-actions">
+          <div class="color-setting" aria-label="내 색 선택">
+            <span>내 색</span>
+            <div class="color-toggle">
+              <button type="button" id="myColorWhite">백</button>
+              <button type="button" id="myColorBlack">흑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="board-stage">
+        <div class="eval-bar">
+          <div id="evalFill"></div>
+          <div class="eval-midline"></div>
+          <span id="evalLabel">0.0</span>
+        </div>
+        <div id="board"></div>
+      </div>
+      <div class="board-actions">
+        <button id="newGame" type="button">처음으로</button>
+        <button id="undoMove" type="button">한 수 무르기</button>
+        <div class="history-nav-actions" aria-label="수순 이동">
+          <button class="primary-button" id="previousMove" type="button">뒤로가기</button>
+          <button class="primary-button" id="nextMove" type="button">앞으로가기</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="moves-panel">
+      <div class="board-tabs" role="tablist">
+        <button type="button" class="active" data-panel="history">현재 수순</button>
+        <button type="button" data-panel="database" id="databaseTab">내가 둔 수</button>
+      </div>
+
+      <section class="board-tab-panel active" id="historyPanel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">CURRENT GAME</span>
+            <h1>현재 수순</h1>
+          </div>
+        </div>
+        <div class="pgn-window" id="pgnDisplay">
+          <div class="empty-state">아직 진행된 수가 없습니다.</div>
+        </div>
+      </section>
+
+      <section class="board-tab-panel" id="databasePanel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">MY DATABASE</span>
+            <h1 id="moveListTitle">내가 둔 수</h1>
+          </div>
+          <div class="move-panel-tools">
+            <div class="move-sort" aria-label="수 정렬">
+              <button type="button" class="active" id="moveSortFrequency" data-sort="frequency">빈도순</button>
+              <button type="button" id="moveSortQuality" data-sort="quality">평가순</button>
+            </div>
+            <span id="resultCount">0개</span>
+          </div>
+        </div>
+        <div class="move-list" id="moveList">
+          <div class="empty-state">연결된 계정의 수를 불러오는 중입니다.</div>
+        </div>
+      </section>
+
+      <div class="fen-popover hidden" id="fenPopover" aria-hidden="true">
+        <label for="fenSearchInput">
+          <span>FEN 입력</span>
+          <textarea id="fenSearchInput" spellcheck="false"></textarea>
+        </label>
+        <p class="inline-message" id="fenMessage"></p>
+        <div class="fen-popover-actions">
+          <button type="button" id="closeFenInput">취소</button>
+          <button class="primary-button" type="button" id="applyFenSearch">검색</button>
+        </div>
+      </div>
+      <div class="pgn-popover hidden" id="pgnPopover" aria-hidden="true">
+        <label for="pgnPasteInput">
+          <span>PGN 붙여넣기</span>
+          <textarea id="pgnPasteInput" spellcheck="false"></textarea>
+        </label>
+        <p class="inline-message" id="pgnMessage"></p>
+        <div class="fen-popover-actions">
+          <button type="button" id="closePgnInput">취소</button>
+          <button class="primary-button" type="button" id="applyPgnPaste">불러오기</button>
+        </div>
+      </div>
+      <div class="fen-tools">
+        <button type="button" id="openFenInput">FEN 입력</button>
+        <button type="button" id="copyFen">현재 FEN 복사</button>
+      </div>
+      <div class="fen-tools pgn-tools">
+        <button type="button" id="openPgnInput">PGN 붙여넣기</button>
+        <button type="button" id="copyPgn">현재 PGN 복사</button>
+      </div>
+    </aside>
+  </main>
+
+  <div class="modal-backdrop hidden" id="analysisManager" aria-hidden="true">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="analysisManagerTitle">
+      <div class="modal-heading">
+        <div>
+          <span class="eyebrow">SETTINGS</span>
+          <h2 id="analysisManagerTitle">설정</h2>
+        </div>
+        <button class="icon-button" id="closeAnalysisManager" type="button" aria-label="닫기">×</button>
+      </div>
+
+      <div class="settings-layout-modal">
+        <div class="settings-tabs" role="tablist" aria-label="설정 탭">
+          <button class="settings-tab-button active" type="button" data-settings-tab="analysis">분석 관리</button>
+          <button class="settings-tab-button" type="button" data-settings-tab="board">보드 설정</button>
+          <button class="settings-tab-button" type="button" data-settings-tab="user">사용자 정보</button>
+        </div>
+
+        <div class="settings-tab-panel active" id="settingsAnalysisPanel">
+          <div class="manager-section">
+            <h3>계정 관리</h3>
+            <p>숨긴 계정은 보드 수 목록과 새 분석 대상에서 제외됩니다. 제거하면 이 앱의 연결 목록에서만 사라집니다.</p>
+            <div class="settings-info-list" id="managerAccountList"></div>
+          </div>
+
+          <div class="manager-section danger-zone">
+            <h3>분석 초기화</h3>
+            <p>저장된 모든 게임, 수, 분석 결과와 작업 기록을 영구 삭제합니다.</p>
+            <label for="resetConfirmation">초기화하려면 RESET 입력</label>
+            <input id="resetConfirmation" autocomplete="off" placeholder="RESET">
+            <button class="danger-button" id="resetDatabase" type="button" disabled>전체 데이터 초기화</button>
+          </div>
+
+          <div class="manager-section">
+            <h3>게임 추가</h3>
+            <p>계정 추가, 분석 설정, 분석, 완료 단계로 돌아가 새 게임을 가져오고 분석을 이어갑니다.</p>
+            <button id="addGamesPlaceholder" type="button">계정/게임 추가</button>
+          </div>
+        </div>
+
+        <div class="settings-tab-panel" id="settingsBoardPanel">
+          <div class="manager-section">
+            <h3>보드 데이터 표시 기간</h3>
+            <p>데이터베이스는 그대로 유지하고, 보드의 수 목록에 표시할 게임 날짜만 제한합니다.</p>
+            <button class="filter-toggle" id="toggleDateFilter" type="button" aria-pressed="false">
+              표시 기간 사용
+            </button>
+            <div class="date-filter-controls hidden" id="dateFilterControls">
+              <div class="date-range">
+                <label for="managerDateFrom">
+                  <span>시작 날짜</span>
+                  <input id="managerDateFrom" type="date">
+                </label>
+                <label for="managerDateTo">
+                  <span>종료 날짜</span>
+                  <input id="managerDateTo" type="date">
+                </label>
+              </div>
+              <div class="manager-summary" id="managerSummary">전체 기간의 데이터를 표시합니다.</div>
+              <div class="action-group">
+                <button class="primary-button" id="applyDateFilter" type="button">표시 기간 적용</button>
+                <button id="clearDateFilter" type="button">표시 기간 끄기</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="manager-section">
+            <h3>시점 관리</h3>
+            <div class="settings-control-row">
+              <span>보드 시점</span>
+              <div class="color-toggle">
+                <button type="button" id="settingsViewWhite">백</button>
+                <button type="button" id="settingsViewBlack">흑</button>
+              </div>
+            </div>
+            <div class="settings-control-row">
+              <span>내 색</span>
+              <div class="color-toggle">
+                <button type="button" id="settingsMyColorWhite">백</button>
+                <button type="button" id="settingsMyColorBlack">흑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-tab-panel" id="settingsUserPanel">
+          <div class="manager-section">
+            <h3>현재 계정</h3>
+            <div class="settings-info-list" id="settingsAccountList"></div>
+          </div>
+          <div class="manager-section">
+            <h3>Stockfish 설정</h3>
+            <div class="settings-info-list">
+              <div class="settings-info-row">
+                <span>현재 깊이</span>
+                <strong id="settingsDepth">14</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="inline-message" id="managerMessage"></p>
+    </section>
+  </div>
+
+  <script src="/static/jquery.min.js"></script>
+  <script>window.exports = {};</script>
+  <script src="/static/chess.js"></script>
+  <script>window.Chess = window.exports.Chess;</script>
+  <script src="/static/chessboard-1.0.0.min.js"></script>
+  <script src="/static/flow.js?v=1.1.17"></script>
+  <script src="/static/board.js?v=1.1.17"></script>
+</body>
+</html>

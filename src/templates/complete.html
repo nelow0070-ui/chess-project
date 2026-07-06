@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>분석 완료 - checkss</title>
+  <link rel="icon" href="/static/assets/checkss.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/static/assets/checkss-favicon.png">
+  <link rel="stylesheet" href="/static/app.css?v=1.1.17">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">checkss</a>
+    <span class="step-label">4 / 4 · 분석 완료</span>
+  </header>
+
+  <main class="flow-page complete-page">
+    <section class="flow-frame">
+      <div class="flow-stage">
+        <section class="complete-panel">
+          <div class="complete-mark" aria-hidden="true">♕</div>
+          <span class="eyebrow">COMPLETE</span>
+          <h1>분석이 완료되었습니다</h1>
+          <p>이제 보드에서 현재 포지션 기준으로 내 수와 상대 수의 데이터를 바로 확인할 수 있습니다.</p>
+
+          <dl class="job-meta-grid complete-meta">
+            <div><dt>분석 수</dt><dd id="completeMoves">-</dd></div>
+            <div><dt>깊이</dt><dd id="completeDepth">-</dd></div>
+            <div><dt>계정</dt><dd id="completeAccounts">-</dd></div>
+          </dl>
+
+          <p class="inline-message error" id="completeError"></p>
+
+          <div class="flow-actions complete-actions">
+            <a class="secondary-button" href="/analysis" data-slide-link>설정 다시 보기</a>
+            <a class="primary-button" href="/board" data-slide-link>보드로 이동</a>
+          </div>
+        </section>
+      </div>
+
+      <nav class="flow-progress progress-4" aria-label="분석 진행 단계">
+        <ol>
+          <li class="is-complete">
+            <span class="station-dot"></span>
+            <span>계정 불러오기</span>
+          </li>
+          <li class="is-complete">
+            <span class="station-dot"></span>
+            <span>분석 설정</span>
+          </li>
+          <li class="is-complete">
+            <span class="station-dot"></span>
+            <span>분석</span>
+          </li>
+          <li class="is-active">
+            <span class="station-dot"></span>
+            <span>완료</span>
+          </li>
+        </ol>
+      </nav>
+    </section>
+  </main>
+
+  <script src="/static/flow.js?v=1.1.17"></script>
+  <script src="/static/complete.js?v=1.1.17"></script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>계정 연결 - checkss</title>
+  <link rel="icon" href="/static/assets/checkss.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/static/assets/checkss-favicon.png">
+  <link rel="stylesheet" href="/static/app.css?v=1.1.17">
+</head>
+<body data-flow-mode="{{ flow_mode }}">
+  <header class="topbar">
+    <a class="brand" href="/">checkss</a>
+    <span class="step-label">1 / 4 · {{ '계정 추가' if flow_mode == 'add-games' else '계정 연결' }}</span>
+  </header>
+
+  <main class="flow-page account-page">
+    <section class="flow-frame">
+      <div class="flow-stage">
+        <section class="account-shell">
+          <aside class="account-hero">
+            <div>
+              <span class="eyebrow">{{ 'ADD GAMES' if flow_mode == 'add-games' else 'IMPORT GAMES' }}</span>
+              <h1>
+                {% if flow_mode == 'add-games' %}
+                  새 기보를 가져오고<br>분석을 이어갑니다
+                {% else %}
+                  기보를 가져오고<br>내 수를 분석합니다
+                {% endif %}
+              </h1>
+              <p>
+                {% if flow_mode == 'add-games' %}
+                  기존 계정에서 새 게임을 불러오거나 다른 플랫폼 계정을 추가한 뒤 같은 분석 단계로 이어갑니다.
+                {% else %}
+                  사용하는 플랫폼만 연결하세요. checkss가 저장된 게임을 정리하고 다음 단계에서 분석 설정을 이어갑니다.
+                {% endif %}
+              </p>
+            </div>
+            <div class="hero-import-art" aria-hidden="true">
+              <img src="/static/assets/account-import-flow.png" alt="" draggable="false">
+            </div>
+          </aside>
+
+          <section class="account-form-card">
+            <form class="account-panel" data-provider="chesscom">
+              <div class="platform-heading">
+                <strong>Chess.com</strong>
+                <span class="connection-state">연결 안 됨</span>
+              </div>
+              <label for="chesscomUsername">Chess.com 닉네임</label>
+              <div class="input-row">
+                <input id="chesscomUsername" autocomplete="username" placeholder="예: Nelo_w">
+                <button class="primary-button" type="submit">불러오기</button>
+              </div>
+              <p class="inline-message" aria-live="polite"></p>
+            </form>
+
+            <form class="account-panel" data-provider="lichess">
+              <div class="platform-heading">
+                <strong>Lichess</strong>
+                <span class="connection-state">연결 안 됨</span>
+              </div>
+              <label for="lichessUsername">Lichess 닉네임</label>
+              <div class="input-row">
+                <input id="lichessUsername" autocomplete="username" placeholder="Lichess 아이디">
+                <button class="primary-button" type="submit">불러오기</button>
+              </div>
+              <p class="inline-message" aria-live="polite"></p>
+            </form>
+
+            <div class="flow-actions account-actions">
+              <span id="accountSummary">연결된 계정이 없습니다.</span>
+              <button class="primary-button" id="continueButton" type="button" disabled>분석 설정으로</button>
+            </div>
+          </section>
+        </section>
+      </div>
+
+      <nav class="flow-progress progress-1" aria-label="분석 진행 단계">
+        <ol>
+          <li class="is-active">
+            <span class="station-dot"></span>
+            <span>{{ '계정 추가' if flow_mode == 'add-games' else '계정 불러오기' }}</span>
+          </li>
+          <li>
+            <span class="station-dot"></span>
+            <span>분석 설정</span>
+          </li>
+          <li>
+            <span class="station-dot"></span>
+            <span>분석</span>
+          </li>
+          <li>
+            <span class="station-dot"></span>
+            <span>완료</span>
+          </li>
+        </ol>
+      </nav>
+    </section>
+  </main>
+
+  <script src="/static/flow.js?v=1.1.17"></script>
+  <script src="/static/accounts.js?v=1.1.17"></script>
+</body>
+</html>
