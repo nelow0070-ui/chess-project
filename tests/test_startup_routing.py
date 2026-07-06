@@ -199,7 +199,24 @@ class StartupRoutingTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.content_type, "application/json")
-        self.assertIn("invalid date format", response.get_json()["error"])
+        self.assertNotIn("invalid date format", response.get_json()["error"])
+        self.assertIn("게임을 불러오지 못했습니다", response.get_json()["error"])
+
+    def test_eval_rejects_overlong_fen_before_engine_start(self):
+        response = self.client.get("/eval", query_string={"fen": "x" * 121})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["error"], "fen is too long")
+
+    def test_eval_rate_limits_repeated_requests(self):
+        self.server.eval_request_times.clear()
+        with mock.patch.object(self.server, "EVAL_RATE_LIMIT_REQUESTS", 1):
+            first = self.client.get("/eval", query_string={"fen": "invalid"})
+            second = self.client.get("/eval", query_string={"fen": "invalid"})
+
+        self.assertEqual(first.status_code, 400)
+        self.assertEqual(second.status_code, 429)
+        self.assertEqual(second.get_json()["error"], "too many eval requests")
 
     def test_moves_winrate_uses_player_color_for_opponent_moves(self):
         fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"

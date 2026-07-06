@@ -1,5 +1,5 @@
 #define MyAppName "checkss"
-#define MyAppVersion "1.1.19"
+#define MyAppVersion "1.1.20"
 #define MyAppPublisher "checkss"
 #define MyAppExeName "checkss.exe"
 

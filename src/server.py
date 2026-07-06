@@ -1,6 +1,8 @@
 from pathlib import Path
+from collections import defaultdict, deque
 import os
 import sys
+import time
 
 import chess
 import chess.engine
@@ -74,6 +76,10 @@ FETCHERS = {
     "chesscom": (fetch_chesscom_pgn, ChessComError),
     "lichess": (fetch_lichess_pgn, LichessError),
 }
+EVAL_FEN_MAX_LENGTH = 120
+EVAL_RATE_LIMIT_REQUESTS = 60
+EVAL_RATE_LIMIT_WINDOW_SECONDS = 60
+eval_request_times = defaultdict(deque)
 
 init_db()
 if (
@@ -98,6 +104,17 @@ def score_to_eval(score):
     if white_score.is_mate():
         return {"type": "mate", "mate": white_score.mate()}
     return {"type": "cp", "cp": white_score.score()}
+
+
+def eval_rate_limited(client_id):
+    now = time.monotonic()
+    timestamps = eval_request_times[client_id or "local"]
+    while timestamps and now - timestamps[0] > EVAL_RATE_LIMIT_WINDOW_SECONDS:
+        timestamps.popleft()
+    if len(timestamps) >= EVAL_RATE_LIMIT_REQUESTS:
+        return True
+    timestamps.append(now)
+    return False
 
 
 @app.get("/")
@@ -160,7 +177,7 @@ def import_games():
         return jsonify({"error": str(exc)}), 502
     except Exception as exc:
         app.logger.exception("Account import failed")
-        return jsonify({"error": f"게임을 불러오지 못했습니다: {exc}"}), 500
+        return jsonify({"error": "게임을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."}), 500
 
     canonical = imported["username"]
     imported.pop("move_ids", None)
@@ -535,6 +552,10 @@ def get_eval():
     fen = request.args.get("fen")
     if not fen:
         return jsonify({"error": "fen is required"}), 400
+    if len(fen) > EVAL_FEN_MAX_LENGTH:
+        return jsonify({"error": "fen is too long"}), 400
+    if eval_rate_limited(request.remote_addr):
+        return jsonify({"error": "too many eval requests"}), 429
     try:
         position = chess.Board(fen)
     except ValueError:
@@ -558,4 +579,9 @@ def get_eval():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    app.run(
+        host=os.environ.get("CHECKSS_HOST", "127.0.0.1"),
+        port=int(os.environ.get("CHECKSS_PORT", "5000")),
+        debug=os.environ.get("CHECKSS_DEBUG") == "1",
+        use_reloader=False,
+    )
