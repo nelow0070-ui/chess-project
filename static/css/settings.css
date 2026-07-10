@@ -1,0 +1,206 @@
+.modal-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(25, 28, 31, 0.55);
+}
+.modal-card {
+  display: flex;
+  flex-direction: column;
+  width: min(380px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+}
+.modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.modal-heading h2 { margin: 5px 0 0; font-size: 1.2rem; }
+.settings-layout-modal {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
+  padding-top: 14px;
+}
+.settings-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+}
+.settings-tabs button {
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 7px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.settings-tabs button.active {
+  background: var(--burgundy);
+  color: #fff;
+}
+.settings-tab-panel {
+  display: none;
+  height: min(380px, calc(100vh - 210px));
+  min-height: 260px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 10px;
+}
+.settings-tab-panel.active { display: block; }
+.manager-section { padding: 16px 0; }
+.manager-section,
+.settings-info-list,
+.settings-info-row,
+.settings-control-row {
+  min-width: 0;
+  max-width: 100%;
+}
+.manager-section + .manager-section { border-top: 1px solid var(--line); }
+.manager-section h3 { margin: 0; font-size: 1rem; }
+.manager-section p { margin: 6px 0 16px; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+.manager-section input { width: 100%; margin-bottom: 10px; }
+.filter-toggle { width: 100%; }
+.filter-toggle.active {
+  border-color: var(--burgundy);
+  background: var(--burgundy);
+  color: #fff;
+}
+.time-class-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.time-class-filters button {
+  min-height: 34px;
+  font-size: 0.75rem;
+}
+.time-class-filters button.active {
+  border-color: var(--burgundy);
+  background: var(--burgundy);
+  color: #fff;
+}
+.date-filter-controls { margin-top: 14px; }
+.date-range { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.date-range label { margin: 0; }
+.date-range label span { display: block; margin-bottom: 8px; }
+.manager-summary {
+  margin: 2px 0 14px;
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.danger-zone {
+  margin: 0 2px;
+  padding: 18px 12px;
+  border: 1px solid #efcfd4;
+  border-radius: 8px;
+  background: #fff7f7;
+  box-shadow: 0 1px 0 rgba(178, 59, 59, 0.04);
+}
+.manager-section + .danger-zone { border-top: 1px solid #efcfd4; }
+.danger-zone h3 { color: var(--red); }
+.settings-control-row,
+.settings-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 9px 0;
+}
+.settings-control-row + .settings-control-row,
+.settings-info-row + .settings-info-row {
+  border-top: 1px solid var(--line);
+}
+.settings-control-row > span,
+.settings-info-row span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.settings-info-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--burgundy-dark);
+  font-size: 0.88rem;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-account-row {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.settings-account-row.is-hidden {
+  opacity: 0.68;
+}
+.settings-account-main {
+  display: grid;
+  flex: 1 1 130px;
+  min-width: 0;
+  gap: 3px;
+}
+.settings-account-main strong {
+  text-align: left;
+}
+.settings-account-main em {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+}
+.settings-account-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.settings-account-actions button {
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+}
+.settings-info-list {
+  margin-top: 8px;
+  padding: 0 12px;
+  overflow-x: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+}
+.settings-empty {
+  padding: 14px 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}

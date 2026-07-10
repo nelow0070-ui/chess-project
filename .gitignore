@@ -12,5 +12,16 @@ Thumbs.db
 .vscode/
 *.swp
 *.db.bak-*
+*.db-shm
+*.db-wal
+analysis.err
+tools/*
+!tools/benchmark_stockfish.py
+!tools/benchmark_accuracy.py
+!tools/verify_background_lifecycle.py
 node_modules/
 dist/
+build/
+release/
+output/
+.playwright-cli/

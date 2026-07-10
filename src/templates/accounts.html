@@ -6,7 +6,7 @@
   <title>계정 연결 - checkss</title>
   <link rel="icon" href="/static/assets/checkss.ico" sizes="any">
   <link rel="icon" type="image/png" href="/static/assets/checkss-favicon.png">
-  <link rel="stylesheet" href="/static/app.css?v=1.1.20">
+  {% include "partials/styles.html" %}
 </head>
 <body data-flow-mode="{{ flow_mode }}">
   <header class="topbar">
@@ -99,7 +99,10 @@
     </section>
   </main>
 
-  <script src="/static/flow.js?v=1.1.20"></script>
-  <script src="/static/accounts.js?v=1.1.20"></script>
+  <script src="/static/flow.js?v={{ app_version }}"></script>
+  <script src="/static/accounts.js?v={{ app_version }}"></script>
 </body>
 </html>
+
+
+

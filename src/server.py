@@ -21,6 +21,15 @@ from analysis_service import (
     resume_job,
     worker,
 )
+from board_helpers import (
+    TIME_CLASS_LABELS,
+    fen_lookup_keys,
+    opponent_for_game,
+    parse_time_classes,
+    player_result,
+    san_for_uci,
+    san_line,
+)
 from chesscom import (
     ChessComError,
     fetch_player_pgn as fetch_chesscom_pgn,
@@ -90,13 +99,9 @@ if (
     worker.resume()
 
 
-def fen_lookup_keys(fen):
-    parts = fen.split(" ")
-    if len(parts) < 4:
-        return [fen]
-    exact_key = " ".join(parts[:4])
-    no_ep_key = " ".join(parts[:3] + ["-"])
-    return list(dict.fromkeys([exact_key, no_ep_key]))
+@app.context_processor
+def inject_app_version():
+    return {"app_version": APP_VERSION}
 
 
 def score_to_eval(score):
@@ -451,6 +456,7 @@ def get_moves():
     perspective = request.args.get("perspective")
     date_from = (request.args.get("date_from") or "").strip()
     date_to = (request.args.get("date_to") or "").strip()
+    time_classes = parse_time_classes(request.args.get("time_classes"))
     accounts = normalize_accounts(
         [
             {"provider": "chesscom", "username": request.args.get("chesscom")},
@@ -485,12 +491,18 @@ def get_moves():
             "AND replace(g.date, '.', '-') <= ?)"
         )
         params.append(date_to)
+    if time_classes:
+        placeholders = ",".join("?" for _ in time_classes)
+        where_clauses.append(
+            f"COALESCE(NULLIF(g.time_class, ''), 'unknown') IN ({placeholders})"
+        )
+        params.extend(time_classes)
 
     with connect() as conn:
         rows = conn.execute(
             f"""
             SELECT m.move, m.san, m.mistake_type, m.turn,
-                   g.result, g.player_color, m.is_player_move
+                   g.result, g.player_color, g.time_class, m.is_player_move
             FROM moves m
             JOIN games g ON g.id = m.game_id
             WHERE {" AND ".join(where_clauses)}
@@ -513,11 +525,14 @@ def get_moves():
                 "draws": 0,
                 "losses": 0,
                 "types": {},
+                "time_classes": {},
             },
         )
         item["count"] += 1
         mistake = row["mistake_type"] or "unknown"
         item["types"][mistake] = item["types"].get(mistake, 0) + 1
+        time_class = row["time_class"] or "unknown"
+        item["time_classes"][time_class] = item["time_classes"].get(time_class, 0) + 1
         if row["result"] == "1/2-1/2":
             item["draws"] += 1
         elif row["result"] in ("1-0", "0-1"):
@@ -541,10 +556,235 @@ def get_moves():
             (item["wins"] + item["draws"] * 0.5) / item["count"] * 100, 1
         )
         item["type"] = max(item["types"].items(), key=lambda pair: pair[1])[0]
+        item["categories"] = [
+            {
+                "key": key,
+                "label": TIME_CLASS_LABELS.get(key, key),
+                "count": count,
+            }
+            for key, count in sorted(
+                item["time_classes"].items(),
+                key=lambda pair: (-pair[1], pair[0]),
+            )
+        ]
         item.pop("types")
+        item.pop("time_classes")
         result.append(item)
     result.sort(key=lambda item: item["count"], reverse=True)
     return jsonify(result)
+
+
+@app.get("/api/move-games")
+def get_move_games():
+    fen = request.args.get("fen")
+    move_uci = (request.args.get("move") or "").strip()
+    perspective = request.args.get("perspective")
+    date_from = (request.args.get("date_from") or "").strip()
+    date_to = (request.args.get("date_to") or "").strip()
+    time_classes = parse_time_classes(request.args.get("time_classes"))
+    accounts = normalize_accounts(
+        [
+            {"provider": "chesscom", "username": request.args.get("chesscom")},
+            {"provider": "lichess", "username": request.args.get("lichess")},
+        ]
+    )
+    if not fen or not move_uci:
+        return jsonify({"error": "fen and move are required"}), 400
+
+    fen_keys = fen_lookup_keys(fen)
+    placeholders = ",".join("?" for _ in fen_keys)
+    where_clauses = [f"m.fen_key IN ({placeholders})", "m.move = ?"]
+    params = [*fen_keys, move_uci]
+    if accounts:
+        accounts_sql, accounts_params = account_where(accounts)
+        where_clauses.append(f"({accounts_sql})")
+        params.extend(accounts_params)
+    if perspective == "player":
+        where_clauses.append("m.is_player_move = 1")
+    elif perspective == "opponent":
+        where_clauses.append("m.is_player_move = 0")
+    if date_from:
+        where_clauses.append(
+            "(g.date IS NOT NULL AND g.date != '' "
+            "AND replace(g.date, '.', '-') >= ?)"
+        )
+        params.append(date_from)
+    if date_to:
+        where_clauses.append(
+            "(g.date IS NOT NULL AND g.date != '' "
+            "AND replace(g.date, '.', '-') <= ?)"
+        )
+        params.append(date_to)
+    if time_classes:
+        class_placeholders = ",".join("?" for _ in time_classes)
+        where_clauses.append(
+            f"COALESCE(NULLIF(g.time_class, ''), 'unknown') IN ({class_placeholders})"
+        )
+        params.extend(time_classes)
+
+    with connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT m.id AS move_id, m.ply, m.san, m.mistake_type,
+                   g.id AS game_id, g.white, g.black, g.result, g.date,
+                   g.event, g.site, g.link, g.provider, g.player_username,
+                   g.player_color, g.time_control, g.time_class
+            FROM moves m
+            JOIN games g ON g.id = m.game_id
+            WHERE {" AND ".join(where_clauses)}
+            ORDER BY replace(COALESCE(g.date, ''), '.', '-') DESC,
+                     g.id DESC, m.ply ASC
+            """,
+            params,
+        ).fetchall()
+
+    return jsonify(
+        {
+            "games": [
+                {
+                    "move_id": row["move_id"],
+                    "game_id": row["game_id"],
+                    "ply": row["ply"],
+                    "san": row["san"],
+                    "date": row["date"],
+                    "opponent": opponent_for_game(row),
+                    "result": row["result"],
+                    "player_result": player_result(row["result"], row["player_color"]),
+                    "white": row["white"],
+                    "black": row["black"],
+                    "provider": row["provider"],
+                    "player_username": row["player_username"],
+                    "link": row["link"],
+                    "time_control": row["time_control"],
+                    "time_class": row["time_class"] or "unknown",
+                    "time_class_label": TIME_CLASS_LABELS.get(
+                        row["time_class"] or "unknown",
+                        row["time_class"] or "unknown",
+                    ),
+                    "mistake_type": row["mistake_type"] or "unknown",
+                }
+                for row in rows
+            ]
+        }
+    )
+
+
+@app.post("/api/games/<int:game_id>/analysis")
+def request_game_analysis(game_id):
+    payload = request.get_json(silent=True) or {}
+    depth = max(14, min(16, int(payload.get("depth") or DEFAULT_ANALYSIS_DEPTH)))
+    threads = max(1, min(16, int(payload.get("threads") or DEFAULT_ANALYSIS_WORKERS)))
+    with connect() as conn:
+        game_row = conn.execute(
+            """
+            SELECT provider, player_username
+            FROM games
+            WHERE id = ?
+            """,
+            (game_id,),
+        ).fetchone()
+        if not game_row:
+            return jsonify({"error": "경기를 찾을 수 없습니다."}), 404
+        move_rows = conn.execute(
+            """
+            SELECT id FROM moves
+            WHERE game_id = ? AND COALESCE(analysis_depth, 0) < ?
+            ORDER BY ply
+            """,
+            (game_id, depth),
+        ).fetchall()
+
+    if not move_rows:
+        return jsonify({"ready": True, "job": None})
+
+    try:
+        job_id, created = create_job(
+            [
+                {
+                    "provider": game_row["provider"],
+                    "username": game_row["player_username"],
+                }
+            ],
+            depth,
+            threads,
+            move_ids=[row["id"] for row in move_rows],
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"ready": False, "created": created, "job": job_payload(job_id)})
+
+
+@app.get("/api/games/<int:game_id>/analysis")
+def get_game_analysis(game_id):
+    with connect() as conn:
+        game_row = conn.execute(
+            """
+            SELECT id, white, black, result, date, event, site, link,
+                   provider, player_username, player_color,
+                   time_control, time_class
+            FROM games
+            WHERE id = ?
+            """,
+            (game_id,),
+        ).fetchone()
+        if not game_row:
+            return jsonify({"error": "경기를 찾을 수 없습니다."}), 404
+        move_rows = conn.execute(
+            """
+            SELECT id, ply, move_number, turn, fen_before, fen_after, move,
+                   san, best_move, best_line, reply_line, eval_diff,
+                   mistake_type, analysis_depth
+            FROM moves
+            WHERE game_id = ?
+            ORDER BY ply
+            """,
+            (game_id,),
+        ).fetchall()
+
+    ready = all((row["analysis_depth"] or 0) >= 14 for row in move_rows)
+    return jsonify(
+        {
+            "ready": ready,
+            "game": {
+                "id": game_row["id"],
+                "white": game_row["white"],
+                "black": game_row["black"],
+                "date": game_row["date"],
+                "result": game_row["result"],
+                "player_result": player_result(
+                    game_row["result"],
+                    game_row["player_color"],
+                ),
+                "opponent": opponent_for_game(game_row),
+                "provider": game_row["provider"],
+                "link": game_row["link"],
+                "time_control": game_row["time_control"],
+                "time_class": game_row["time_class"] or "unknown",
+                "time_class_label": TIME_CLASS_LABELS.get(
+                    game_row["time_class"] or "unknown",
+                    game_row["time_class"] or "unknown",
+                ),
+            },
+            "moves": [
+                {
+                    "id": row["id"],
+                    "ply": row["ply"],
+                    "move_number": row["move_number"],
+                    "turn": row["turn"],
+                    "san": row["san"],
+                    "uci": row["move"],
+                    "best_move": row["best_move"],
+                    "best_san": san_for_uci(row["fen_before"], row["best_move"]),
+                    "best_line": san_line(row["fen_before"], row["best_line"]),
+                    "reply_line": san_line(row["fen_after"], row["reply_line"]),
+                    "eval_diff": row["eval_diff"],
+                    "mistake_type": row["mistake_type"] or "unknown",
+                    "analysis_depth": row["analysis_depth"] or 0,
+                }
+                for row in move_rows
+            ],
+        }
+    )
 
 
 @app.get("/eval")

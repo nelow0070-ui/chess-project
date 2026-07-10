@@ -1,0 +1,57 @@
+@media (max-width: 1000px) {
+  .account-page,
+  .setup-page,
+  .analyzing-page { width: calc(100vw - 28px); }
+  .board-page { gap: 8px; width: calc(100vw - 20px); }
+  .board-column, .moves-panel { padding: 7px; }
+  .board-toolbar-actions { gap: 4px; }
+  .color-setting { gap: 4px; }
+  .color-toggle button { min-width: 36px; padding: 0 6px; }
+  .board-actions { gap: 5px; }
+  .board-actions button { min-height: 36px; padding: 0 10px; font-size: 0.82rem; }
+  .pgn-window { padding: 10px; }
+}
+
+@media (max-width: 620px) {
+  .board-body { overflow: auto; }
+  .account-grid, .account-shell, .settings-layout, .board-page { grid-template-columns: 1fr; }
+  .account-hero { min-height: 260px; }
+  .hero-import-art { height: 128px; margin-top: 16px; }
+  .board-page { height: auto; }
+  .board-column, .moves-panel { height: auto; overflow: visible; }
+  #board { width: min(76vw, 550px); min-width: 0; }
+  .eval-bar { height: min(76vw, 550px); min-height: min(76vw, 550px); }
+}
+
+@media (max-width: 620px) {
+  .flow-page { width: calc(100vw - 20px); margin: 24px auto; }
+  .flow-heading h1 { font-size: 1.55rem; }
+  .input-row, .flow-actions { grid-template-columns: 1fr; }
+  .input-row { display: grid; }
+  .flow-actions { align-items: stretch; flex-direction: column; }
+  .action-group { display: grid; }
+  .flow-progress li { min-width: 58px; font-size: 0.64rem; }
+  .station-dot {
+    width: 14px;
+    height: 14px;
+  }
+  .flow-progress ol::before,
+  .flow-progress ol::after { top: 7px; }
+  .setup-page .settings-layout { grid-template-columns: 1fr; }
+  .analysis-hero { grid-template-columns: 1fr; }
+  .stockfish-hero-art {
+    justify-self: center;
+  }
+  .stats-row strong { font-size: 0.92rem; }
+  .depth-options { grid-template-columns: repeat(3, 1fr); }
+  .board-page { width: calc(100vw - 16px); margin-top: 8px; }
+  .board-column, .moves-panel { padding: 10px; }
+  .board-toolbar { align-items: flex-start; }
+  .board-toolbar-actions { align-items: flex-end; flex-direction: column-reverse; }
+  #board { width: min(78vw, 550px); }
+  .eval-bar { width: 27px; min-height: min(78vw, 550px); }
+  .board-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .board-actions .primary-button { grid-column: 1 / -1; }
+  .date-range { grid-template-columns: 1fr; }
+  .job-meta-grid { grid-template-columns: 1fr; }
+}

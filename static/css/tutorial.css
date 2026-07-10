@@ -1,0 +1,24 @@
+.tutorial-card { width: min(430px, 100%); }
+.tutorial-steps {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tutorial-steps li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.tutorial-steps li:last-child { border-bottom: 0; }
+.tutorial-steps strong {
+  color: var(--burgundy-dark);
+  font-size: 0.9rem;
+}
+.tutorial-steps span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}

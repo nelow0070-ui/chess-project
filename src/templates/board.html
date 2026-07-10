@@ -7,12 +7,13 @@
   <link rel="stylesheet" href="/static/chessboard-1.0.0.min.css">
   <link rel="icon" href="/static/assets/checkss.ico" sizes="any">
   <link rel="icon" type="image/png" href="/static/assets/checkss-favicon.png">
-  <link rel="stylesheet" href="/static/app.css?v=1.1.20">
+  {% include "partials/styles.html" %}
 </head>
 <body class="board-body">
   <header class="topbar">
     <a class="brand" href="/">checkss</a>
     <nav class="top-actions">
+      <button class="icon-button settings-trigger" id="openTutorial" type="button" aria-label="튜토리얼">?</button>
       <button class="icon-button settings-trigger" id="openAnalysisManager" type="button" aria-label="설정">⚙</button>
     </nav>
   </header>
@@ -188,6 +189,17 @@
           </div>
 
           <div class="manager-section">
+            <h3>경기 카테고리</h3>
+            <p>불렛, 블리츠, 래피드, 일일 경기별로 보드 수 목록과 경기 목록을 나눠 봅니다.</p>
+            <div class="time-class-filters" id="timeClassFilters" aria-label="경기 카테고리 필터">
+              <button type="button" data-time-class="bullet" aria-pressed="false">불렛</button>
+              <button type="button" data-time-class="blitz" aria-pressed="false">블리츠</button>
+              <button type="button" data-time-class="rapid" aria-pressed="false">래피드</button>
+              <button type="button" data-time-class="daily" aria-pressed="false">일일</button>
+            </div>
+          </div>
+
+          <div class="manager-section">
             <h3>시점 관리</h3>
             <div class="settings-control-row">
               <span>보드 시점</span>
@@ -227,12 +239,37 @@
     </section>
   </div>
 
+  <div class="modal-backdrop hidden" id="tutorialModal" aria-hidden="true">
+    <section class="modal-card tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+      <div class="modal-heading">
+        <div>
+          <span class="eyebrow">TUTORIAL</span>
+          <h2 id="tutorialTitle">1.2 분석 사용법</h2>
+        </div>
+        <button class="icon-button" id="closeTutorial" type="button" aria-label="닫기">×</button>
+      </div>
+      <ol class="tutorial-steps">
+        <li><strong>보드에서 포지션을 만든 뒤</strong><span>오른쪽의 수 목록에서 후보 수와 승률을 확인합니다.</span></li>
+        <li><strong>수 카드의 경기 버튼</strong><span>그 수가 실제로 나온 경기를 날짜순으로 봅니다.</span></li>
+        <li><strong>경기 하나 선택</strong><span>깊이 14 이상 분석을 자동 요청하고 최선수, 실수 대응 수순, 체크메이트 수순을 확인합니다.</span></li>
+        <li><strong>설정의 경기 카테고리</strong><span>불렛, 블리츠, 래피드, 일일 경기만 따로 필터링합니다.</span></li>
+      </ol>
+    </section>
+  </div>
+
   <script src="/static/jquery.min.js"></script>
   <script>window.exports = {};</script>
   <script src="/static/chess.js"></script>
   <script>window.Chess = window.exports.Chess;</script>
   <script src="/static/chessboard-1.0.0.min.js"></script>
-  <script src="/static/flow.js?v=1.1.20"></script>
-  <script src="/static/board.js?v=1.1.20"></script>
+  <script src="/static/flow.js?v={{ app_version }}"></script>
+  <script src="/static/board/state.js?v={{ app_version }}"></script>
+  <script src="/static/board/core.js?v={{ app_version }}"></script>
+  <script src="/static/board/forms.js?v={{ app_version }}"></script>
+  <script src="/static/board/database.js?v={{ app_version }}"></script>
+  <script src="/static/board/main.js?v={{ app_version }}"></script>
 </body>
 </html>
+
+
+

@@ -1,3 +1,4 @@
 python-chess
 flask
 requests
+waitress

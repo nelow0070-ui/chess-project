@@ -42,7 +42,9 @@ def init_db():
                 round TEXT,
                 link TEXT,
                 player_username TEXT,
-                player_color TEXT
+                player_color TEXT,
+                time_control TEXT,
+                time_class TEXT
             );
 
             CREATE TABLE IF NOT EXISTS moves (
@@ -57,6 +59,8 @@ def init_db():
                 san TEXT,
                 fen_after TEXT,
                 best_move TEXT,
+                best_line TEXT,
+                reply_line TEXT,
                 eval_diff INTEGER,
                 mistake_type TEXT,
                 is_player_move INTEGER,
@@ -97,7 +101,11 @@ def init_db():
         ensure_column(conn, "games", "player_color", "TEXT")
         ensure_column(conn, "games", "source_id", "TEXT")
         ensure_column(conn, "games", "provider", "TEXT")
+        ensure_column(conn, "games", "time_control", "TEXT")
+        ensure_column(conn, "games", "time_class", "TEXT")
         ensure_column(conn, "moves", "is_player_move", "INTEGER")
+        ensure_column(conn, "moves", "best_line", "TEXT")
+        ensure_column(conn, "moves", "reply_line", "TEXT")
         ensure_column(conn, "moves", "analysis_time_ms", "INTEGER")
         ensure_column(conn, "moves", "analyzed_at", "TEXT")
         ensure_column(conn, "moves", "analysis_depth", "INTEGER")
@@ -125,6 +133,29 @@ def init_db():
             END
             WHERE provider IS NULL
             """
+        )
+        conn.execute(
+            """
+            UPDATE games
+            SET time_control = COALESCE(NULLIF(time_control, ''), NULL)
+            """
+        )
+        rows = conn.execute(
+            """
+            SELECT id, event, time_control
+            FROM games
+            WHERE time_class IS NULL OR time_class = ''
+            """
+        ).fetchall()
+        conn.executemany(
+            "UPDATE games SET time_class = ? WHERE id = ?",
+            [
+                (
+                    classify_time_control(row["time_control"], row["event"]),
+                    row["id"],
+                )
+                for row in rows
+            ],
         )
         conn.execute(
             """
@@ -160,6 +191,36 @@ def player_color(headers, username):
     return None
 
 
+def classify_time_control(time_control, event=None):
+    event_text = (event or "").casefold()
+    for value in ("bullet", "blitz", "rapid", "daily", "correspondence"):
+        if value in event_text:
+            return "daily" if value == "correspondence" else value
+
+    control = (time_control or "").strip()
+    if not control or control == "-":
+        return "unknown"
+    if "/" in control:
+        return "daily"
+
+    first = control.split(":", 1)[0]
+    base_text, _, increment_text = first.partition("+")
+    try:
+        base_seconds = int(base_text)
+        increment_seconds = int(increment_text or "0")
+    except ValueError:
+        return "unknown"
+
+    estimated_seconds = base_seconds + (40 * increment_seconds)
+    if estimated_seconds < 180:
+        return "bullet"
+    if estimated_seconds < 600:
+        return "blitz"
+    if estimated_seconds < 3600:
+        return "rapid"
+    return "daily"
+
+
 def game_source_id(game):
     link = game.headers.get("Link") or game.headers.get("Site")
     if link and link.startswith("http"):
@@ -178,12 +239,18 @@ def save_game(conn, game, username, provider):
 
     headers = game.headers
     color = player_color(headers, username)
+    time_control = headers.get("TimeControl")
+    time_class = (headers.get("TimeClass") or classify_time_control(
+        time_control,
+        headers.get("Event"),
+    )).strip().lower()
     cursor = conn.execute(
         """
         INSERT INTO games (
             white, black, result, date, event, site, round, link,
-            player_username, player_color, source_id, provider
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            player_username, player_color, source_id, provider,
+            time_control, time_class
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             headers.get("White"),
@@ -198,6 +265,8 @@ def save_game(conn, game, username, provider):
             color,
             source_id,
             provider,
+            time_control,
+            time_class,
         ),
     )
     game_id = cursor.lastrowid

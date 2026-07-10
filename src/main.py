@@ -1,79 +1,46 @@
-import io
+import argparse
 
-import chess.pgn
+from chesscom import ChessComError, import_player_games as import_chesscom_games
+from database import init_db, player_summary
+from lichess import LichessError, import_player_games as import_lichess_games
 
-from save_games import (
-    download_chesscom_all,
-    init_db,
-    parse_pgn_text,
-    save_game_to_db,
-)
 
-# ---------------- 입력 모드 ----------------
-def input_pgn_mode():
-    print("\nPGN 입력 모드 (exit 입력 시 종료)\n")
+IMPORTERS = {
+    "chesscom": import_chesscom_games,
+    "lichess": import_lichess_games,
+}
 
-    while True:
-        print("PGN 입력 시작 (빈 줄 2번 입력하면 종료):")
 
-        lines = []
+def import_games(platform, username):
+    result = IMPORTERS[platform](username)
+    canonical_username = result["username"]
+    summary = player_summary(canonical_username, provider=platform)
 
-        while True:
-            line = input()
+    print(f"\n[{platform}] {canonical_username}")
+    print(f"새 게임: {result['added_games']}")
+    print(f"중복 게임: {result['skipped_games']}")
+    print(f"새 수: {result['added_moves']}")
+    print(f"저장된 게임: {summary['games']}")
+    print(f"저장된 내 수: {summary['player_moves']}")
 
-            if line.strip().lower() == "exit":
-                print("종료합니다.")
-                return
 
-            if line == "" and lines and lines[-1] == "":
-                break
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description="Chess.com 또는 Lichess 게임을 DB에 저장합니다."
+    )
+    parser.add_argument(
+        "platform",
+        choices=IMPORTERS,
+        help="게임을 가져올 플랫폼",
+    )
+    parser.add_argument("username", help="플랫폼 사용자 아이디")
+    return parser
 
-            lines.append(line)
 
-        pgn_text = "\n".join(lines).strip()
-
-        if not pgn_text:
-            print("빈 PGN\n")
-            continue
-
-        game = chess.pgn.read_game(io.StringIO(pgn_text))
-
-        if game is None:
-            print("PGN 파싱 실패\n")
-            continue
-
-        save_game_to_db(game)
-        print("저장 완료!\n")
-
-# ---------------- 실행 ----------------
 if __name__ == "__main__":
     init_db()
-
-    print("\n모드 선택:")
-    print("1. PGN 파일")
-    print("2. 직접 입력")
-    print("3. Chess.com 자동 가져오기")
-
-    mode = input("선택: ")
-
-    if mode == "1":
-        path = input("PGN 파일 경로 입력: ")
-        with open(path, encoding="utf-8") as f:
-            parse_pgn_text(f.read())
-
-    elif mode == "2":
-        input_pgn_mode()
-
-    elif mode == "3":
-        username = input("Chess.com 아이디 입력: ")
-        year = int(input("연도 입력 (예: 2025): "))
-
-        pgn_text = download_chesscom_all(username, year)
-
-        if not pgn_text:
-            print("게임을 가져오지 못했습니다.")
-        else:
-            parse_pgn_text(pgn_text, player_username=username)
-
-    else:
-        print("잘못된 입력")
+    args = build_parser().parse_args()
+    try:
+        import_games(args.platform, args.username)
+    except (ChessComError, LichessError) as exc:
+        raise SystemExit(str(exc)) from exc
